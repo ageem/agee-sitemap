@@ -11,13 +11,6 @@ interface ImageAnalysis {
   height: number | null;
 }
 
-interface ScoreInput {
-  titleScore: number;
-  descriptionScore: number;
-  loadTimeScore: number;
-  imageScore: number;
-}
-
 export class PageAnalyzerService {
   static async analyzePage(pageUrl: string): Promise<PageAnalysis> {
     try {
@@ -68,13 +61,28 @@ export class PageAnalyzerService {
         height: img.height
       }));
 
+      // Create analysis objects for score calculation
+      const analysisObjects = [
+        { issues: titleAnalysis.issues },
+        { issues: descriptionAnalysis.issues },
+        { issues: performanceAnalysis.issues }
+      ];
+
+      // Add image issues if any images are missing alt text
+      if (images.length > 0) {
+        const missingAltImages = images.filter(img => !img.hasAlt);
+        if (missingAltImages.length > 0) {
+          analysisObjects.push({
+            issues: [{
+              type: 'warning',
+              message: `${missingAltImages.length} images are missing alt text`
+            }]
+          });
+        }
+      }
+
       // Calculate overall score
-      const score = calculateSeoScore({
-        titleScore: titleAnalysis.isOptimal ? 1 : 0,
-        descriptionScore: descriptionAnalysis.isOptimal ? 1 : 0,
-        loadTimeScore: performanceAnalysis.issues.length === 0 ? 1 : 0,
-        imageScore: images.length > 0 ? images.filter(img => img.hasAlt).length / images.length : 1
-      } as ScoreInput);
+      const score = calculateSeoScore(analysisObjects);
 
       // Combine all issues
       const issues = [

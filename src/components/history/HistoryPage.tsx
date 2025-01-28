@@ -209,11 +209,12 @@ export function HistoryPage() {
 
       return (data?.map(d => ({
         id: d.id,
-        url: d.sitemap_url,
-        created: new Date(d.created_at).toISOString()
-      })));
-      
-      return data as Analysis[];
+        user_id: d.user_id,
+        sitemap_url: d.sitemap_url,
+        created_at: d.created_at,
+        status: d.status as 'completed' | 'failed',
+        results: d.results || { pages: [] }
+      } as Analysis)) || []);
     },
     enabled: !!user,
     refetchInterval: 5000, // Refetch every 5 seconds while component is mounted
