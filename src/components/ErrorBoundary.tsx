@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface Props {
@@ -31,7 +31,7 @@ class ErrorBoundary extends Component<Props, State> {
           <Alert variant="destructive">
             <AlertTitle>Something went wrong</AlertTitle>
             <AlertDescription>
-              {this.state.error?.message || 'An unexpected error occurred'}
+              {this.state.error?.message || 'An unknown error occurred'}
               <button
                 onClick={() => window.location.reload()}
                 className="mt-4 px-4 py-2 bg-destructive text-destructive-foreground rounded hover:bg-destructive/90"
