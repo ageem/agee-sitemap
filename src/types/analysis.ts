@@ -1,4 +1,4 @@
-export type IssueType = 'error' | 'warning'
+export type IssueType = 'error' | 'warning' | 'success'
 
 export interface SeoIssue {
   type: IssueType
@@ -11,8 +11,8 @@ export interface ImageAnalysis {
   hasAlt: boolean
   altText?: string
   altLength?: number
-  width?: string | null
-  height?: string | null
+  width?: number | null
+  height?: number | null
 }
 
 export interface TitleAnalysis {
@@ -30,7 +30,8 @@ export interface DescriptionAnalysis {
 }
 
 export interface PerformanceAnalysis {
-  loadTime: number
+  loadTime?: number
+  size?: number
   issues: SeoIssue[]
 }
 
@@ -39,7 +40,7 @@ export interface PageAnalysis {
   title: TitleAnalysis
   description: DescriptionAnalysis
   performance: PerformanceAnalysis
-  images: string[]
+  images: ImageAnalysis[]
   score: number
   issues: SeoIssue[]
 }
@@ -60,7 +61,8 @@ export interface Analysis {
   id?: string
   user_id: string
   sitemap_url: string
-  status: 'completed' | 'failed'
-  results: AnalysisResult
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  results?: AnalysisResult
   created_at?: string
+  error?: string
 }
