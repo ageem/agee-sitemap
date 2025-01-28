@@ -54,14 +54,13 @@ export class SitemapService {
     }
   }
 
-  static async analyzeSitemap(sitemapUrl: string, onProgress: (progress: number) => void): Promise<string[]> {
-    const sitemapXml = await ProxyService.fetch(sitemapUrl);
-    const urls = this.extractUrlsFromSitemap(sitemapXml);
-    
-    if (urls.length === 0) {
-      throw new Error('No valid URLs found in sitemap');
+  static async fetchSitemap(url: string): Promise<string[]> {
+    try {
+      const xml = await ProxyService.fetch(url);
+      return this.extractUrlsFromSitemap(xml);
+    } catch (error) {
+      console.error('Error fetching sitemap:', error);
+      return [];
     }
-    
-    return urls;
   }
 }

@@ -108,7 +108,6 @@ export function analyzeLoadTime(loadTime: number): PerformanceAnalysis {
 }
 
 export function calculateSeoScore(analyses: { issues: SeoIssue[] }[]): number {
-  const totalIssues = analyses.reduce((sum, analysis) => sum + analysis.issues.length, 0);
   const errorCount = analyses.reduce((sum, analysis) => 
     sum + analysis.issues.filter(i => i.type === 'error').length, 0
   );
@@ -119,6 +118,6 @@ export function calculateSeoScore(analyses: { issues: SeoIssue[] }[]): number {
   // Each error reduces score by 20%, each warning by 5%
   const score = 100 - (errorCount * 20) - (warningCount * 5);
   
-  // Ensure score is between 0 and 100
+  // Ensure score stays between 0 and 100
   return Math.max(0, Math.min(100, score));
 }

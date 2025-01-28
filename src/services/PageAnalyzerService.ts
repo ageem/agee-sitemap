@@ -3,6 +3,21 @@ import { analyzeTitleTag, analyzeMetaDescription, analyzeLoadTime, calculateSeoS
 import { ProxyService } from './ProxyService';
 import { JSDOM } from 'jsdom';
 
+interface ImageAnalysis {
+  src: string;
+  hasAlt: boolean;
+  altText?: string;
+  width: number | null;
+  height: number | null;
+}
+
+interface ScoreInput {
+  titleScore: number;
+  descriptionScore: number;
+  loadTimeScore: number;
+  imageScore: number;
+}
+
 export class PageAnalyzerService {
   static async analyzePage(pageUrl: string): Promise<PageAnalysis> {
     try {
@@ -15,7 +30,7 @@ export class PageAnalyzerService {
       // Try to extract title and meta description from HTML if we got HTML response
       let title = '';
       let description = '';
-      let images: { src: string; hasAlt: boolean; altText?: string }[] = [];
+      let images: ImageAnalysis[] = [];
       
       if (html.includes('<!DOCTYPE html>') || html.includes('<html')) {
         const dom = new JSDOM(html);
@@ -31,12 +46,12 @@ export class PageAnalyzerService {
 
         // Extract images
         const imageElements = doc.querySelectorAll('img');
-        images = Array.from(imageElements).map(img => ({
+        images = Array.from(imageElements).map((img: HTMLImageElement) => ({
           src: img.getAttribute('src') || '',
           hasAlt: img.hasAttribute('alt'),
           altText: img.getAttribute('alt') || undefined,
-          width: img.getAttribute('width') ? parseInt(img.getAttribute('width')!) : null,
-          height: img.getAttribute('height') ? parseInt(img.getAttribute('height')!) : null
+          width: img.getAttribute('width') ? parseInt(img.getAttribute('width') || '0') : null,
+          height: img.getAttribute('height') ? parseInt(img.getAttribute('height') || '0') : null
         }));
       }
       
@@ -59,7 +74,7 @@ export class PageAnalyzerService {
         descriptionScore: descriptionAnalysis.isOptimal ? 1 : 0,
         loadTimeScore: performanceAnalysis.issues.length === 0 ? 1 : 0,
         imageScore: images.length > 0 ? images.filter(img => img.hasAlt).length / images.length : 1
-      });
+      } as ScoreInput);
 
       // Combine all issues
       const issues = [

@@ -14,7 +14,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
@@ -197,37 +197,17 @@ export function HistoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTab, setSelectedTab] = useState<'all' | 'improving' | 'needs-attention'>('all');
 
-  const { data: history, isLoading } = useQuery({
-    queryKey: ['history', user?.id],
+  const { data: analyses, isLoading } = useQuery({
+    queryKey: ['analyses', user?.id],
     queryFn: async () => {
-      if (!user) return [];
-      console.log('Fetching history for user:', user.id);
-      
-      // First, let's count total records
-      const { count, error: countError } = await supabase
-        .from('analysis_history')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-        
-      console.log('Total records in database:', count);
-      
-      if (countError) {
-        console.error('Error counting records:', countError);
-      }
-
       const { data, error } = await supabase
-        .from('analysis_history')
+        .from('analyses')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching history:', error);
-        throw error;
-      }
-      
-      console.log('Fetched records:', data?.length);
-      console.log('Record timestamps:', data?.map(d => ({
+
+      if (error) throw error;
+
+      return (data?.map(d => ({
         id: d.id,
         url: d.sitemap_url,
         created: new Date(d.created_at).toISOString()
@@ -238,7 +218,7 @@ export function HistoryPage() {
     enabled: !!user,
     refetchInterval: 5000, // Refetch every 5 seconds while component is mounted
     staleTime: 0, // Consider data stale immediately
-    cacheTime: 0 // Don't cache the data
+    gcTime: 0 // Don't cache the data (formerly cacheTime)
   });
 
   if (!user) {
@@ -273,7 +253,7 @@ export function HistoryPage() {
     );
   }
 
-  if (!history?.length) {
+  if (!analyses?.length) {
     return (
       <div className="container p-6 mx-auto">
         <Card>
@@ -293,7 +273,7 @@ export function HistoryPage() {
     );
   }
 
-  const groupedAnalyses = groupAnalysesByDomain(history);
+  const groupedAnalyses = groupAnalysesByDomain(analyses);
   const domains = Object.entries(groupedAnalyses)
     .filter(([domain]) => 
       domain.toLowerCase().includes(searchQuery.toLowerCase())
