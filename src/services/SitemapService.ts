@@ -1,24 +1,33 @@
 import { ProxyService } from './ProxyService';
+import { XMLParser } from 'fast-xml-parser';
 
 export class SitemapService {
   static extractUrlsFromSitemap(xml: string): string[] {
     try {
       console.log('Raw XML content:', xml.substring(0, 500));
       
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xml, 'text/xml');
+      const parser = new XMLParser();
+      const result = parser.parse(xml);
       
-      // Find all loc elements (they contain URLs)
-      const locNodes = xmlDoc.getElementsByTagName('loc');
-      console.log('Found loc nodes:', locNodes.length);
+      // Handle both urlset (standard sitemap) and sitemapindex (sitemap index)
+      const urls: string[] = [];
       
-      // Convert NodeList to Array and extract URLs
-      const urls = Array.from(locNodes).map(node => node.textContent || '').filter(Boolean);
+      if (result.urlset?.url) {
+        // Standard sitemap
+        const urlNodes = Array.isArray(result.urlset.url) ? result.urlset.url : [result.urlset.url];
+        urls.push(...urlNodes.map(node => node.loc).filter(Boolean));
+      } else if (result.sitemapindex?.sitemap) {
+        // Sitemap index
+        const sitemaps = Array.isArray(result.sitemapindex.sitemap) 
+          ? result.sitemapindex.sitemap 
+          : [result.sitemapindex.sitemap];
+        urls.push(...sitemaps.map(node => node.loc).filter(Boolean));
+      }
       
       // Log found URLs
       urls.forEach((url, index) => {
         if (index < 5) {
-          console.log('Found URL from loc:', url);
+          console.log('Found URL:', url);
         }
       });
       
@@ -29,7 +38,7 @@ export class SitemapService {
       return urls;
     } catch (error) {
       console.error('Error parsing sitemap:', error);
-      throw new Error('Failed to parse sitemap XML');
+      return [];
     }
   }
 

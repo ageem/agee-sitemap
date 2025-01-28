@@ -1,6 +1,7 @@
 import { PageAnalysis } from '@/types/analysis';
 import { analyzeTitleTag, analyzeMetaDescription, analyzeLoadTime, calculateSeoScore } from '@/utils/seoAnalysis';
 import { ProxyService } from './ProxyService';
+import { JSDOM } from 'jsdom';
 
 export class PageAnalyzerService {
   static async analyzePage(pageUrl: string): Promise<PageAnalysis> {
@@ -8,16 +9,17 @@ export class PageAnalyzerService {
       console.log('Analyzing page:', pageUrl);
       const startTime = performance.now();
       
-      const response = await ProxyService.fetch(pageUrl);
+      const html = await ProxyService.fetch(pageUrl);
       const loadTime = performance.now() - startTime;
       
       // Try to extract title and meta description from HTML if we got HTML response
       let title = '';
       let description = '';
+      let images: { src: string; hasAlt: boolean; altText?: string }[] = [];
       
-      if (response.includes('<!DOCTYPE html>') || response.includes('<html')) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(response, 'text/html');
+      if (html.includes('<!DOCTYPE html>') || html.includes('<html')) {
+        const dom = new JSDOM(html);
+        const doc = dom.window.document;
         
         // Extract title
         const titleElement = doc.querySelector('title');
@@ -26,50 +28,58 @@ export class PageAnalyzerService {
         // Extract meta description
         const metaDesc = doc.querySelector('meta[name="description"]');
         description = metaDesc?.getAttribute('content') || '';
+
+        // Extract images
+        const imageElements = doc.querySelectorAll('img');
+        images = Array.from(imageElements).map(img => ({
+          src: img.getAttribute('src') || '',
+          hasAlt: img.hasAttribute('alt'),
+          altText: img.getAttribute('alt') || undefined,
+          width: img.getAttribute('width') ? parseInt(img.getAttribute('width')!) : null,
+          height: img.getAttribute('height') ? parseInt(img.getAttribute('height')!) : null
+        }));
       }
       
       const titleAnalysis = analyzeTitleTag(title);
       const descriptionAnalysis = analyzeMetaDescription(description);
       const performanceAnalysis = analyzeLoadTime(loadTime);
       
-      const score = calculateSeoScore([
-        titleAnalysis,
-        descriptionAnalysis,
-        performanceAnalysis
-      ]);
+      // Analyze each image
+      const imageAnalyses = images.map(img => ({
+        src: img.src,
+        hasAlt: img.hasAlt,
+        altText: img.altText,
+        width: img.width,
+        height: img.height
+      }));
+
+      // Calculate overall score
+      const score = calculateSeoScore({
+        titleScore: titleAnalysis.isOptimal ? 1 : 0,
+        descriptionScore: descriptionAnalysis.isOptimal ? 1 : 0,
+        loadTimeScore: performanceAnalysis.issues.length === 0 ? 1 : 0,
+        imageScore: images.length > 0 ? images.filter(img => img.hasAlt).length / images.length : 1
+      });
+
+      // Combine all issues
+      const issues = [
+        ...titleAnalysis.issues,
+        ...descriptionAnalysis.issues,
+        ...performanceAnalysis.issues
+      ];
 
       return {
         url: pageUrl,
         title: titleAnalysis,
         description: descriptionAnalysis,
         performance: performanceAnalysis,
-        images: [],
+        images: imageAnalyses,
         score,
-        issues: [
-          ...titleAnalysis.issues,
-          ...descriptionAnalysis.issues,
-          ...performanceAnalysis.issues
-        ]
+        issues
       };
     } catch (error) {
-      console.error('Error analyzing page:', {
-        url: pageUrl,
-        error: error instanceof Error ? error.message : String(error)
-      });
-      
-      return {
-        url: pageUrl,
-        title: { text: '', length: 0, isOptimal: false, issues: [] },
-        description: { text: '', length: 0, isOptimal: false, issues: [] },
-        performance: { loadTime: 0, issues: [] },
-        images: [],
-        score: 0,
-        issues: [{
-          type: 'error',
-          message: 'Failed to analyze page',
-          details: error instanceof Error ? error.message : 'Unknown error'
-        }]
-      };
+      console.error('Error analyzing page:', error);
+      throw error;
     }
   }
 
