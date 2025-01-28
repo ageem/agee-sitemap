@@ -1,6 +1,18 @@
 import { ProxyService } from './ProxyService';
 import { XMLParser } from 'fast-xml-parser';
 
+interface SitemapUrl {
+  loc: string;
+  lastmod?: string;
+  changefreq?: string;
+  priority?: string;
+}
+
+interface SitemapIndex {
+  loc: string;
+  lastmod?: string;
+}
+
 export class SitemapService {
   static extractUrlsFromSitemap(xml: string): string[] {
     try {
@@ -15,13 +27,13 @@ export class SitemapService {
       if (result.urlset?.url) {
         // Standard sitemap
         const urlNodes = Array.isArray(result.urlset.url) ? result.urlset.url : [result.urlset.url];
-        urls.push(...urlNodes.map(node => node.loc).filter(Boolean));
+        urls.push(...urlNodes.map((node: SitemapUrl) => node.loc).filter(Boolean));
       } else if (result.sitemapindex?.sitemap) {
         // Sitemap index
         const sitemaps = Array.isArray(result.sitemapindex.sitemap) 
           ? result.sitemapindex.sitemap 
           : [result.sitemapindex.sitemap];
-        urls.push(...sitemaps.map(node => node.loc).filter(Boolean));
+        urls.push(...sitemaps.map((node: SitemapIndex) => node.loc).filter(Boolean));
       }
       
       // Log found URLs
