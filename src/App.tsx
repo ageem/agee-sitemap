@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
+import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import { SitemapAnalyzer } from './components/analyzer/SitemapAnalyzer'
 import { HistoryPage } from './components/history/HistoryPage'
 import { LoginPage } from './components/auth/LoginPage'
@@ -30,19 +30,22 @@ function Header() {
           <Link to="/" className="text-gray-600 hover:text-gray-900">
             Analyzer
           </Link>
-          {user && (
-            <Link to="/history" className="text-gray-600 hover:text-gray-900">
-              History
-            </Link>
-          )}
           {user ? (
-            <Button variant="outline" onClick={signOut}>
-              Sign Out
-            </Button>
+            <>
+              <Link to="/history" className="text-gray-600 hover:text-gray-900">
+                History
+              </Link>
+              <Button
+                variant="outline"
+                onClick={() => signOut()}
+              >
+                Sign Out
+              </Button>
+            </>
           ) : (
-            <Button variant="outline" asChild>
-              <Link to="/login">Sign In</Link>
-            </Button>
+            <Link to="/login">
+              <Button variant="outline">Sign In</Button>
+            </Link>
           )}
         </nav>
       </div>
@@ -57,7 +60,7 @@ function App() {
         <Router>
           <div className="min-h-screen bg-gray-50">
             <Header />
-            <main className="container mx-auto px-4 py-8">
+            <main className="container mx-auto py-8">
               <Routes>
                 <Route path="/" element={<SitemapAnalyzer />} />
                 <Route path="/history" element={<HistoryPage />} />
